@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock Algorithm Page Replacement Visualizer</title>
+    <!-- Link to the main stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Full-width header at the top of the page -->
+    <header>
+        <h1>Clock Algorithm Page Replacement Visualizer</h1>
+    </header>
+
+    <!-- Main container for the two-column layout -->
+    <main id="main-container">
+        
+        <!-- ===== LEFT PANEL ===== -->
+        <!-- This column holds the input form and the simulation controls -->
+        <div class="left-panel">
+            
+            <!-- Section for user inputs -->
+            <section id="input-section">
+                <h2>Input Parameters</h2>
+                <form id="input-form">
+                    <label for="num-frames">Number of Frames (1-10):</label>
+                    <input type="number" id="num-frames" min="1" max="10" value="3"><br>
+                    
+                    <label for="reference-string">Reference String (comma-separated):</label>
+                    <input type="text" id="reference-string" placeholder="e.g., 1,2,3,2,4,1,3,5,4,1"><br>
+                    
+                    <button type="submit">Start Simulation</button>
+                </form>
+            </section>
+            
+            <!-- Section for simulation controls (play, pause, etc.) -->
+            <!-- It's hidden by default and shown with JavaScript after simulation starts -->
+            <section id="controls-section" style="display: none;">
+                <h2>Simulation Controls</h2>
+                <button id="play-btn">Play</button>
+                <button id="pause-btn">Pause</button>
+                <button id="step-forward-btn">Step Forward</button>
+                <button id="step-backward-btn">Step Backward</button>
+                
+                <!-- Animation speed slider -->
+                <div class="slider-control">
+                    <label for="speed-slider">Animation Speed:</label>
+                    <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="100">
+                </div>
+
+                <!-- Timeline slider for scrubbing through steps -->
+                <div id="timeline-slider-container">
+                    <label for="timeline-slider">Timeline:</label>
+                    <input type="range" id="timeline-slider" min="0" max="0" value="0">
+                    <span id="timeline-label">Step: 0</span>
+                </div>
+
+                <!-- Export buttons -->
+                <button id="export-screenshot">Export Screenshot</button>
+                <button id="export-trace">Export Execution Trace</button>
+            </section>
+        </div>
+
+        <!-- ===== RIGHT PANEL ===== -->
+        <!-- This column holds the visualization and statistics -->
+        <div class="right-panel">
+            <section id="visualization-section">
+                <h2>Visualization</h2>
+                
+                <!-- The canvas element where JavaScript will draw the animation -->
+                <canvas id="animation-canvas"></canvas> 
+                
+                <!-- The display box for all statistics -->
+                <div id="stats-display">
+                    <h3>Execution Statistics</h3>
+                    <p id="page-faults">Page Faults: 0</p>
+                    <p id="page-hits">Page Hits: 0</p>
+                    <p id="miss-ratio">Miss Ratio: 0%</p>
+                    <p id="hit-ratio">Hit Ratio: 0%</p>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- JavaScript files are loaded at the end of the body for faster page load -->
+    <!-- 'type="module"' allows using 'import' and 'export' in the JS files -->
+    <script src="ui.js" type="module"></script>
+    <script src="algorithm.js" type="module"></script>
+    <script src="animation.js" type="module"></script>
+    <script src="main.js" type="module"></script>
+</body>
+</html>
+

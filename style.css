@@ -1,0 +1,156 @@
+/* --- Global Styles --- */
+/* These styles apply to the entire page */
+body {
+    background-color: #0e0e10; /* Dark background color */
+    color: #e0e0e0; /* Light grey text color for readability */
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /* Modern, clean font stack */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6; /* Standard line spacing */
+}
+
+h1, h2, h3 {
+    color: #00c3ff; /* Bright blue for all headings */
+    text-shadow: 0 0 10px rgba(0, 195, 255, 0.6); /* Adds a "glow" effect */
+}
+
+header {
+    text-align: center;
+    padding: 0.5rem; /* Minimal padding to keep it short */
+    background: linear-gradient(90deg, #121212, #1c1f26); /* Subtle gradient background */
+    border-bottom: 2px solid #00c3ff33; /* Faint blue bottom border */
+}
+
+/* Base style for the content "cards" (e.g., Input, Controls, Visualization) */
+section {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    background-color: #1b1d22; /* Slightly lighter than the body background */
+    border-radius: 12px; /* Rounded corners */
+    box-shadow: 0 0 20px rgba(0, 195, 255, 0.1); /* Subtle blue glow */
+}
+
+/* --- Layout --- */
+/* This container establishes the main 2-column layout using flexbox */
+#main-container {
+    display: flex;
+    flex-wrap: wrap; /* Allows columns to stack on small screens */
+    gap: 1.5rem; /* Space between the left and right panels */
+    padding: 1rem;
+    align-items: flex-start; /* Aligns columns to the top */
+}
+
+/* Left column (for inputs and controls) */
+.left-panel {
+    flex: 1; /* Takes 1 part of the available space */
+    min-width: 300px; /* Ensures it doesn't get too small */
+}
+
+/* Right column (for visualization and stats) */
+.right-panel {
+    flex: 2.5; /* Takes 2.5 parts, making it wider */
+    min-width: 500px;
+}
+
+/* --- Input Form --- */
+#input-section label { 
+    display: block; /* Makes labels appear on their own line */
+    margin-top: 0.8rem; 
+}
+#input-section input[type="number"],
+#input-section input[type="text"] {
+    width: 95%; /* Makes text boxes almost full-width */
+    padding: 0.5rem; 
+    border-radius: 6px; 
+    border: 1px solid #333;
+    margin-top: 0.4rem; 
+    background-color: #26282d; /* Dark input background */
+    color: #fff; 
+    font-size: 1rem;
+}
+#input-section button {
+    margin-top: 1.5rem; 
+    background: linear-gradient(45deg, #0078ff, #00c3ff); /* Gradient for the main button */
+    color: #fff; 
+    border: none; 
+    padding: 0.7rem 1.2rem; 
+    border-radius: 8px;
+    font-size: 1rem; 
+    cursor: pointer; 
+    transition: 0.2s ease-in-out; /* Smooth hover transition */
+}
+#input-section button:hover { 
+    transform: scale(1.05); /* Slightly enlarge on hover */
+    box-shadow: 0 0 10px #00c3ff; 
+}
+
+/* --- Simulation Controls --- */
+#controls-section button {
+    background: #22252a; /* Dark button style */
+    color: #00c3ff; /* Blue text */
+    border: 1px solid #00c3ff44; /* Faint blue border */
+    border-radius: 8px; 
+    padding: 0.6rem 1rem; 
+    margin: 0.3rem; 
+    cursor: pointer; 
+    transition: all 0.2s;
+}
+#controls-section button:hover { 
+    background: #00c3ff22; /* Light blue glow on hover */
+    box-shadow: 0 0 10px #00c3ff44; 
+}
+.slider-control, #timeline-slider-container {
+    margin-top: 1rem; 
+    display: flex; 
+    flex-direction: column; /* Stack label on top of slider */
+}
+label[for="speed-slider"], label[for="timeline-slider"] { 
+    margin-bottom: 0.5rem; 
+}
+#controls-section input[type="range"] { 
+    width: 100%; 
+    accent-color: #00c3ff; /* Makes the slider thumb blue */
+}
+#timeline-label { 
+    margin-top: 0.3rem; 
+    color: #bbb; /* Grey text for the step counter */
+    text-align: center; 
+}
+
+/* --- Visualization Canvas --- */
+#visualization-section { 
+    text-align: center; 
+}
+#animation-canvas {
+    display: block;
+    width: 100%; /* Canvas scales to fit its container */
+    height: 360px; /* Fixed height to help with layout alignment */
+    margin: 1rem auto;
+    border: 2px solid #00c3ff33;
+    border-radius: 12px;
+    background: radial-gradient(circle at top left, #14161b, #0d0f12); /* Dark gradient background */
+}
+
+/* --- Statistics Display --- */
+#stats-display {
+    background-color: #15171b; 
+    border-radius: 10px; 
+    padding: 1rem;
+    margin-top: 1.5rem; 
+    box-shadow: 0 0 10px #00c3ff22; 
+    text-align: left; /* Aligns text to the left inside the box */
+}
+#stats-display h3 { 
+    margin-top: 0; 
+}
+#stats-display p { 
+    margin: 0.4rem 0; 
+    font-size: 1rem; 
+    color: #d6d6d6; 
+}
+/* Specific colors for different stats */
+#page-faults { color: #ff5f5f; } /* Red for faults */
+#page-hits { color: #7cf57c; } /* Green for hits */
+#miss-ratio { color: #ff5f5f; } /* Red for miss ratio */
+#hit-ratio { color: #ffd95f; } /* Yellow for hit ratio */
+
