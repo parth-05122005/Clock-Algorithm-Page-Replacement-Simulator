@@ -13,6 +13,8 @@ export function handleFormSubmit() {
     const numFrames = document.getElementById('num-frames').value;
     const referenceString = document.getElementById('reference-string').value;
     
+    console.log('Handling form submit with inputs:', { numFrames, referenceString });
+    
     // --- Validation ---
     
     // 1. Check if fields are empty
@@ -27,13 +29,14 @@ export function handleFormSubmit() {
         // Trim whitespace and convert to a number
         const num = parseInt(item.trim());
         // If conversion fails (e.g., "a" or ""), return null
+        // Note: isNaN(num) will be true for empty strings after trim (e.g., "1,,2")
         return isNaN(num) ? null : num;
     });
     
     // 3. Check if any part of the string was invalid
     if (referenceArray.includes(null)) {
         console.error('Invalid reference string');
-        alert('Reference string must be comma-separated numbers.');
+        alert('Reference string must be comma-separated numbers (e.g., 1,2,3).');
         return null; // Stop execution and return null
     }
     

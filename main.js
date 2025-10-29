@@ -8,8 +8,8 @@
 // --- Module Imports ---
 // Import the form handler from the UI module
 import { handleFormSubmit } from './ui.js'; 
-// Import the core algorithm logic
-import { runClockAlgorithm } from './algorithm.js'; 
+// Import the core algorithm logic (changed to LRU)
+import { runLRUAlgorithm } from './algorithm.js'; 
 // Import all the control functions from the animation module
 import { 
     animateSimulation, 
@@ -44,11 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params) {
             // Convert the reference string (e.g., "1,2,3") into an array of numbers
             const pages = params.referenceString.split(',')
-                .map(s => parseInt(s.trim()));
+                .map(s => {
+                    const num = parseInt(s.trim());
+                    // Handle NaN (e.g., from "1,,2") by treating it as 0 or another default
+                    return isNaN(num) ? 0 : num;
+                });
             
             // Run the algorithm with the user's parameters.
             // This 'simulationData' object contains all the steps and stats.
-            const simulationData = runClockAlgorithm(pages, params.numFrames);
+            const simulationData = runLRUAlgorithm(pages, params.numFrames);
             
             // Prepare the animation module for a new simulation
             resetAnimation(); 

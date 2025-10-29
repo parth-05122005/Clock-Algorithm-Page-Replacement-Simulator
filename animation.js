@@ -158,7 +158,6 @@ function drawFrame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
     // --- Dynamic Sizing Logic ---
-    // This logic dynamically scales the frames to fit the canvas
     const numFrames = state.frames.length;
     const baseFrameWidth = 80;
     const baseGap = 40;
@@ -168,21 +167,18 @@ function drawFrame() {
     let frameWidth = baseFrameWidth;
     let gap = baseGap;
 
-    // Calculate the total width our frames *want* to be
     let totalWidth = (numFrames * frameWidth) + ((numFrames - 1) * gap);
 
-    // If that width is too big for the canvas, we need to scale down
     if (totalWidth > canvas.width - padding) {
         const scale = (canvas.width - padding) / totalWidth;
-        frameWidth *= scale; // Scale down the width
-        gap *= scale; // Scale down the gap
+        frameWidth *= scale;
+        gap *= scale;
     }
 
-    // Recalculate the centered starting X position
     totalWidth = (numFrames * frameWidth) + ((numFrames - 1) * gap);
     const startX = (canvas.width - totalWidth) / 2;
     // Vertically center the frames
-    const startY = (canvas.height - frameHeight) / 2 + 20; 
+    const startY = (canvas.height - frameHeight) / 2 - 20; // Move frames up slightly
 
     // --- Draw Frames ---
     // Loop through each frame in the current state
@@ -192,18 +188,16 @@ function drawFrame() {
         // Default color
         ctx.strokeStyle = "#00ccff"; // Standard blue/cyan
         
-        // --- Color Coding Logic ---
-        if (currentStep > 0 && state.fault) {
-            // A fault just happened. We need to highlight the frame that was *replaced*.
-            // The 'pointer' has already moved *past* the replaced frame,
-            // so we look at the index *before* the current pointer.
-            const replacedIndex = (state.pointer === 0) ? numFrames - 1 : state.pointer - 1;
-            if (replacedIndex === index) {
-                ctx.strokeStyle = "#ff5f5f"; // Red = Replaced
-            }
-        } else if (currentStep > 0 && !state.fault && state.hitIndex === index) {
+        // --- Color Coding Logic for LRU ---
+        if (currentStep > 0 && !state.fault && state.hitIndex === index) {
             // A hit just happened. Highlight the frame that was hit.
             ctx.strokeStyle = "#7cf57c"; // Green = Hit
+        } else if (currentStep > 0 && state.fault) {
+            // A fault just happened.
+            if (state.frames[index] === state.page) {
+                // This is the frame that just received the new page.
+                ctx.strokeStyle = "#ff5f5f"; // Red = New Page / Replaced
+            }
         }
         
         // Draw the frame box
@@ -223,23 +217,43 @@ function drawFrame() {
         ctx.textAlign = "center";
         ctx.fillText(page === -1 ? "-" : page, x + frameWidth / 2, startY + frameHeight / 2 + 8);
 
-        // Draw the Use Bit (e.g., "R:1")
-        ctx.fillStyle = "#93c5fd";
-        ctx.font = `${Math.min(16, frameWidth * 0.25)}px monospace`; // Scale font size
-        ctx.fillText(`R:${state.useBits[index]}`, x + frameWidth / 2, startY + frameHeight + 20);
+        // (Use Bit text is removed)
     });
 
-    // --- Draw Clock Pointer (Yellow Arrow) ---
-    // The pointer points to the *next* frame to be inspected
-    const pointerX = startX + state.pointer * (frameWidth + gap) + frameWidth / 2;
-    const pointerY = startY - 40;
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.moveTo(pointerX, pointerY);
-    ctx.lineTo(pointerX - 10, pointerY - 20);
-    ctx.lineTo(pointerX + 10, pointerY - 20);
-    ctx.closePath();
-    ctx.fill();
+    // --- Draw LRU Recency List ---
+    const recencyY = startY + frameHeight + 50;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "16px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Recency (LRU ➔ MRU)", canvas.width / 2, recencyY);
+
+    const recencyBoxWidth = 40;
+    const recencyGap = 10;
+    const recencyTotalWidth = (state.recency.length * recencyBoxWidth) + Math.max(0, state.recency.length - 1) * recencyGap;
+    const recencyStartX = (canvas.width - recencyTotalWidth) / 2;
+
+    state.recency.forEach((page, index) => {
+        const x = recencyStartX + index * (recencyBoxWidth + recencyGap);
+        
+        // Highlight the page that was just used (MRU)
+        if (page === state.page) {
+            ctx.fillStyle = "#facc15"; // Yellow for the Most Recently Used
+        } else {
+            ctx.fillStyle = "#1e293b";
+        }
+        
+        ctx.strokeStyle = "#93c5fd"; // Light blue border
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x, recencyY + 20, recencyBoxWidth, 30, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "14px Arial";
+        ctx.fillText(page, x + recencyBoxWidth / 2, recencyY + 40);
+    });
+
 
     // --- Draw Top Status Text (e.g., "HIT on Page 2") ---
     ctx.font = "24px Arial";
@@ -247,6 +261,13 @@ function drawFrame() {
     if (state.page !== null) { // 'page' is null only on step 0
         ctx.fillStyle = state.fault ? "#ff5f5f" : "#7cf57c";
         ctx.fillText(`${state.fault ? 'FAULT' : 'HIT'} on Page ${state.page}`, canvas.width / 2, 50);
+        
+        // If it was a fault with eviction, show what was evicted
+        if (state.evictedPage !== null) {
+            ctx.fillStyle = "#ff5f5f";
+            ctx.font = "18px Arial";
+            ctx.fillText(`(Evicted Page ${state.evictedPage})`, canvas.width / 2, 80);
+        }
     } else {
         ctx.fillStyle = "#facc15";
         ctx.fillText("Initial State", canvas.width / 2, 50);
@@ -291,7 +312,7 @@ function updateTimeline() {
 export function exportScreenshot() {
     if (!canvas) return; // Don't export if canvas isn't ready
     const link = document.createElement('a');
-    link.download = 'clock-algorithm-snapshot.png';
+    link.download = 'lru-algorithm-snapshot.png';
     link.href = canvas.toDataURL(); // Convert canvas to Base64 image data
     link.click(); // Programmatically click the link to trigger download
 }
@@ -302,7 +323,7 @@ export function exportScreenshot() {
 export function exportTrace() {
     if (!simulationData) return;
     
-    let traceContent = "Clock Algorithm Execution Trace\n===================================\n";
+    let traceContent = "LRU Algorithm Execution Trace\n===============================\n";
     
     // Build a string by looping through every step
     simulationData.steps.forEach((step, index) => {
@@ -310,8 +331,11 @@ export function exportTrace() {
         traceContent += `  - Referencing Page: ${step.page === null ? 'N/A' : step.page}\n`;
         traceContent += `  - Result: ${index === 0 ? 'Initial State' : (step.fault ? 'Page Fault' : 'Page Hit')}\n`;
         traceContent += `  - Frames: [${step.frames.join(', ')}]\n`; // Show frame contents
-        traceContent += `  - Use Bits: [${step.useBits.join(', ')}]\n`; // Show use bits
-        traceContent += `  - Clock Pointer at index: ${step.pointer}\n\n`;
+        traceContent += `  - Recency (LRU->MRU): [${step.recency.join(', ')}]\n`; // Show recency list
+        if (step.evictedPage !== null) {
+            traceContent += `  - Evicted Page: ${step.evictedPage}\n`; // Show evicted page
+        }
+        traceContent += `\n`;
     });
 
     // Create a "Blob" (Binary Large Object) from the text string
@@ -319,7 +343,7 @@ export function exportTrace() {
     
     // Create a temporary link to download the blob
     const link = document.createElement('a');
-    link.download = 'clock-algorithm-trace.txt';
+    link.download = 'lru-algorithm-trace.txt';
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href); // Clean up the temporary URL

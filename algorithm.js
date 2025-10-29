@@ -1,23 +1,24 @@
 /**
  * algorithm.js
- * * Contains the core logic for the Clock Page Replacement Algorithm.
+ * * Contains the core logic for the LRU Page Replacement Algorithm.
  * This file does not interact with the DOM. It only performs calculations.
  */
 
 /**
- * Executes the Clock Page Replacement algorithm.
+ * Executes the LRU Page Replacement algorithm.
  * @param {number[]} pages - An array of page numbers (e.g., [1, 2, 3, 2, 4]).
  * @param {number} frameCount - The total number of available frames in memory.
  * @returns {object} A simulation data object containing all steps and final stats.
  */
-export function runClockAlgorithm(pages, frameCount) {
+export function runLRUAlgorithm(pages, frameCount) {
     // --- Initialization ---
     // Represents physical memory frames, -1 is 'Empty'
     const frames = Array(frameCount).fill(-1);
-    // The "Reference Bit" for each frame
-    const useBits = Array(frameCount).fill(0);
-    // The "clock hand" that points to the next frame to inspect
-    let clockPointer = 0;
+    
+    // Tracks the order of use. The item at index 0 is the LEAST recently used.
+    // The item at the end is the MOST recently used.
+    const recency = []; 
+    
     let pageFaults = 0;
     let pageHits = 0;
     // Array to store the state at every single step for animation
@@ -25,73 +26,79 @@ export function runClockAlgorithm(pages, frameCount) {
 
     // Push the initial state (all frames empty) before processing any pages
     steps.push({
-        frames: [...frames], // Use spread operator for a new copy
-        useBits: [...useBits], 
-        pointer: clockPointer,
-        page: null,      // No page being processed yet
+        frames: [...frames],
+        recency: [...recency], // Capture recency state
+        page: null,
         fault: false,
         faults: 0,
-        hits: 0
+        hits: 0,
+        hitIndex: -1,
+        evictedPage: null // Page that was kicked out
     });
 
     // --- Process Each Page in the Reference String ---
     for (const page of pages) {
         let hit = false;
-        let pageFoundIndex = -1; // To track *which* frame was a hit
+        let pageFoundIndex = -1;
+        let evictedPage = null; // Track which page gets evicted on this step
 
         // 1. Check for a PAGE HIT
-        for (let j = 0; j < frameCount; j++) {
-            if (frames[j] === page) {
-                // Page is already in memory!
-                useBits[j] = 1; // Set the reference bit to 1
-                hit = true;
-                pageHits++;
-                pageFoundIndex = j;
-                break; // Exit loop once page is found
-            }
+        pageFoundIndex = frames.indexOf(page);
+        if (pageFoundIndex !== -1) {
+            // Page is already in memory!
+            hit = true;
+            pageHits++;
+            
+            // Update recency: Move page to the "most recently used" (end of array)
+            const recencyIndex = recency.indexOf(page);
+            recency.splice(recencyIndex, 1); // Remove from its old position
+            recency.push(page); // Add to the end
         }
-
-        // 2. Handle PAGE FAULT (if 'hit' is still false)
+        
+        // 2. Handle PAGE FAULT (if 'hit' is false)
         if (!hit) {
             pageFaults++;
             
-            // This is the core "Clock" logic:
-            // Find a frame to replace by checking the use bit.
-            while (true) {
-                if (useBits[clockPointer] === 0) {
-                    // Found a frame to replace (Use Bit is 0)
-                    frames[clockPointer] = page;
-                    useBits[clockPointer] = 1; // Set use bit for the new page
-                    // Move pointer to the *next* frame for the next inspection
-                    clockPointer = (clockPointer + 1) % frameCount;
-                    break; // Exit the while loop, replacement is done
-                } else {
-                    // This frame was referenced (Use Bit is 1)
-                    // Give it a "second chance": set its bit to 0
-                    useBits[clockPointer] = 0;
-                    // Move pointer to the next frame to inspect
-                    clockPointer = (clockPointer + 1) % frameCount;
-                }
+            // Check for an empty frame (frames.includes(-1))
+            const emptyFrameIndex = frames.indexOf(-1);
+
+            if (emptyFrameIndex !== -1) {
+                // --- Fault with empty frame ---
+                frames[emptyFrameIndex] = page; // Place page in the empty slot
+                recency.push(page); // Add to most recently used
+            } else {
+                // --- Fault with no empty frames (eviction required) ---
+                
+                // Get the LEAST recently used page (from the front of 'recency')
+                const lruPage = recency.shift(); // Remove LRU page from recency
+                evictedPage = lruPage; // Mark this page as evicted
+                
+                // Find where the LRU page is in the 'frames' array
+                const evictIndex = frames.indexOf(lruPage);
+                
+                // Replace it with the new page
+                frames[evictIndex] = page;
+                
+                // Add the new page as the MOST recently used
+                recency.push(page);
             }
         }
 
         // 3. Store a snapshot of the current state for animation
-        // This happens after every single page, whether it was a hit or a fault
         steps.push({
-            frames: [...frames],      // Copy of the frames array
-            useBits: [...useBits],    // Copy of the use bits array
-            pointer: clockPointer,
-            page: page,               // The page we just processed
-            fault: !hit,              // Boolean, true if it was a fault
+            frames: [...frames],
+            recency: [...recency],
+            page: page,
+            fault: !hit,
             hitIndex: pageFoundIndex, // -1 if fault, or the index of the hit
-            faults: pageFaults,       // Cumulative fault count
-            hits: pageHits            // Cumulative hit count
+            faults: pageFaults,
+            hits: pageHits,
+            evictedPage: evictedPage // null if no eviction
         });
     }
 
     // --- Final Statistics Calculation ---
     const totalRequests = pages.length;
-    // Calculate final ratios (as percentages, fixed to 2 decimal places)
     const hitRatio = totalRequests > 0 ? ((pageHits / totalRequests) * 100).toFixed(2) : 0;
     const missRatio = totalRequests > 0 ? ((pageFaults / totalRequests) * 100).toFixed(2) : 0;
 
