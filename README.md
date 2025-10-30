@@ -1,68 +1,83 @@
-🕒 Clock Algorithm Page Replacement Visualizer
-📘 Project Description
+LRU Page Replacement Algorithm Visualizer
 
-Clock Algorithm Page Replacement Visualizer is a standalone, client-side web application that provides an interactive, animated visualization of the Clock Page Replacement Algorithm.
-Users can input a custom page reference string and number of memory frames to see a step-by-step simulation of how the algorithm manages page faults and hits.
+A web-based, interactive visualizer for the LRU (Least Recently Used) page replacement algorithm. This tool is built with pure HTML, CSS, and JavaScript, using the Canvas API for all animations. It's designed to help students and developers understand how the LRU algorithm works by providing a clear, step-by-step animated simulation.
 
-Built entirely using HTML, CSS, and JavaScript, the app leverages the HTML Canvas API for real-time animations.
-The architecture is fully modular, separating algorithm logic, canvas animation, and UI event handling for clarity and maintainability.
+(Tip: Take a screenshot of your finished project, upload it to your repo, and replace the URL above to show it here!)
 
-⚙️ Feature Overview
-🔢 Interactive Parameter Input
+✨ Features
 
-Set the number of available memory frames.
+Interactive Input: Enter any number of frames and a custom page reference string.
 
-Enter a custom page reference string.
+Full Animation Control: Play, pause, step forward, and step backward through the simulation.
 
-🎬 Full Animation Controls
+Real-time Statistics: Watch live updates for Page Faults, Page Hits, Miss Ratio, and Hit Ratio.
 
-Play, pause, step forward, and step backward through the simulation.
+Speed Control: Adjust the animation speed from slow (for learning) to fast (for quick results).
 
-🕓 Configurable Speed
+Clear State Visualization: See the state of memory before and after each step with side-by-side "Previous Frames" and "Current Frames" queues.
 
-Adjust the animation speed with an intuitive slider.
+Color-Coded Feedback:
 
-🎨 Real-Time Canvas Visualization
+<span style="color: #7cf57c;">Green:</span> Page Hit
 
-Displays all memory frames and their currently loaded pages.
+<span style="color: #ff5f5f;">Red:</span> Page Fault (with evicted page)
 
-Shows the Use Bit (Reference Bit) for each frame.
+Export Screenshot: Save a PNG image of the current visualizer state.
 
-Animates the Clock Pointer to indicate which frame is being inspected.
+Export Trace: Download a complete, step-by-step text log of the entire simulation, including the recency list for each step.
 
-📊 Step-by-Step Timeline
+🚀 How to Use
 
-Jump to any specific step in the simulation using the timeline slider.
+Live Demo
 
-📈 Detailed Statistics
+Click here to try the visualizer live! - https://parth-05122005.github.io/LRU-Algorithm-Page-Replacement-Simulator/
 
-Track page faults, page hits, and final hit/miss ratios.
+Enter Frames: Input the number of available memory frames (e.g., 3).
 
-📤 Export Functionality
+Enter Reference String: Type your page reference string, separated by commas (e.g., 1,2,3,4,1,2,5,1,2,3,4,5).
 
-Screenshot Export: Save a PNG image of the current visualization.
+Click "Start Simulation".
 
-Execution Trace Export: Download a .txt file logging each step, page request, fault/hit status, and memory state.
+Control the animation using the play, pause, and step buttons.
 
-🧰 Technology Stack
-Technology	Purpose
-HTML5	Structures the web application
-CSS3	Styles the layout, controls, and visual components
-JavaScript (ES6+)	Implements application logic and algorithm behavior
-HTML Canvas API	Renders animations and visualizations in real time
-🧱 Code Architecture
+Running Locally
 
-The project follows a modular architecture for readability and scalability:
+This is a standalone, client-side application. No server or dependencies are needed.
 
-File	Description
-index.html	Main HTML file defining the page structure
-style.css	Contains all styling for layout and visuals
-main.js	Entry point connecting UI events to logic
-ui.js	Handles input reading and validation
-algorithm.js	Core implementation of the Clock Page Replacement Algorithm; generates step data for visualization
-animation.js	Renders and animates each simulation step using the Canvas API
-🚀 Getting Started
+Clone this repository:
 
-Clone the repository
+git clone [https://github.com/parth-05122005/LRU-Page-Replacement-Simulator.git](https://github.com/parth-05122005/LRU-Page-Replacement-Simulator.git)
 
-git clone https://github.com/your-username/clock-page-replacement-visualizer.git
+
+Navigate to the project directory:
+
+cd LRU-Page-Replacement-Simulator
+
+
+Open the index.html file in any modern web browser (Chrome, Firefox, Edge, etc.).
+
+💻 Technology Stack
+
+HTML5: For the core structure of the application.
+
+CSS3: For all styling, the dark theme, and the responsive flexbox layout.
+
+JavaScript (ES6+): For all algorithm logic, DOM manipulation, and interactivity. The project is built with modules.
+
+HTML5 Canvas API: For rendering all animated frames, text, and visual elements.
+
+📁 Project Structure
+
+The code is modular by design to separate concerns:
+
+index.html: The main HTML file for the page structure.
+
+style.css: Contains all styles for the application.
+
+main.js: The "brain" of the app. It connects all other modules and attaches event listeners.
+
+ui.js: Manages reading and validating user input from the form.
+
+algorithm.js: Contains only the core runLRUAlgorithm logic. It takes inputs and returns a data object.
+
+animation.js: The "rendering engine." It takes the data from algorithm.js and draws it on the canvas.
