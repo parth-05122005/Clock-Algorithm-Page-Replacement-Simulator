@@ -12,88 +12,86 @@
  */
 export function runLRUAlgorithm(pages, frameCount) {
     // --- Initialization ---
-    // Represents physical memory frames, -1 is 'Empty'
-    const frames = Array(frameCount).fill(-1);
+    const frames = Array(frameCount).fill(-1); // Physical memory frames
     
-    // Tracks the order of use. The item at index 0 is the LEAST recently used.
-    // The item at the end is the MOST recently used.
+    // This is the "memory" of LRU. It stores page numbers in order of use.
+    // Index 0 = Least Recently Used (LRU)
+    // Index n-1 = Most Recently Used (MRU)
     const recency = []; 
     
     let pageFaults = 0;
     let pageHits = 0;
-    // Array to store the state at every single step for animation
-    const steps = [];
+    const steps = []; // Stores the state at every step for animation
 
-    // Push the initial state (all frames empty) before processing any pages
+    // Push the initial state (all frames empty)
     steps.push({
         frames: [...frames],
-        recency: [...recency], // Capture recency state
+        recency: [...recency],
         page: null,
         fault: false,
+        evictedPage: null, // No page evicted yet
         faults: 0,
         hits: 0,
-        hitIndex: -1,
-        evictedPage: null // Page that was kicked out
+        prevState: null // No previous state
     });
 
     // --- Process Each Page in the Reference String ---
     for (const page of pages) {
         let hit = false;
-        let pageFoundIndex = -1;
-        let evictedPage = null; // Track which page gets evicted on this step
+        let evictedPage = null; // Track which page gets evicted on a fault
+
+        // Store the state *before* processing this page
+        const prevState = {
+            frames: [...frames],
+            recency: [...recency]
+        };
 
         // 1. Check for a PAGE HIT
-        pageFoundIndex = frames.indexOf(page);
-        if (pageFoundIndex !== -1) {
+        const hitIndex = frames.indexOf(page);
+        if (hitIndex !== -1) {
             // Page is already in memory!
             hit = true;
             pageHits++;
-            
-            // Update recency: Move page to the "most recently used" (end of array)
-            const recencyIndex = recency.indexOf(page);
-            recency.splice(recencyIndex, 1); // Remove from its old position
-            recency.push(page); // Add to the end
-        }
-        
-        // 2. Handle PAGE FAULT (if 'hit' is false)
-        if (!hit) {
+            // This is a "hit", so this page is now the Most Recently Used.
+            // We must update its position in the recency list.
+            // 1. Remove it from its old position
+            recency.splice(recency.indexOf(page), 1);
+            // 2. Add it to the end (MRU side)
+            recency.push(page);
+        } else {
+            // 2. Handle PAGE FAULT
             pageFaults++;
             
-            // Check for an empty frame (frames.includes(-1))
-            const emptyFrameIndex = frames.indexOf(-1);
-
-            if (emptyFrameIndex !== -1) {
-                // --- Fault with empty frame ---
-                frames[emptyFrameIndex] = page; // Place page in the empty slot
-                recency.push(page); // Add to most recently used
+            if (frames.includes(-1)) {
+                // There is still empty space in memory
+                const emptyIndex = frames.indexOf(-1);
+                frames[emptyIndex] = page;
+                recency.push(page); // This new page is now the MRU
             } else {
-                // --- Fault with no empty frames (eviction required) ---
+                // Memory is full. We must replace the LRU page.
+                // The LRU page is at index 0 of the recency list.
+                const lruPage = recency.shift(); // 1. Get and remove LRU page
+                evictedPage = lruPage;           // Store its name for animation
                 
-                // Get the LEAST recently used page (from the front of 'recency')
-                const lruPage = recency.shift(); // Remove LRU page from recency
-                evictedPage = lruPage; // Mark this page as evicted
+                // 2. Find and replace it in the frames array
+                const lruIndexInFrames = frames.indexOf(lruPage);
+                frames[lruIndexInFrames] = page;
                 
-                // Find where the LRU page is in the 'frames' array
-                const evictIndex = frames.indexOf(lruPage);
-                
-                // Replace it with the new page
-                frames[evictIndex] = page;
-                
-                // Add the new page as the MOST recently used
+                // 3. Add the new page to the MRU side of the list
                 recency.push(page);
             }
         }
 
-        // 3. Store a snapshot of the current state for animation
+        // 3. Store a snapshot of the current state
         steps.push({
             frames: [...frames],
             recency: [...recency],
             page: page,
             fault: !hit,
-            hitIndex: pageFoundIndex, // -1 if fault, or the index of the hit
+            evictedPage: evictedPage, // Will be null on a hit, or the page number
             faults: pageFaults,
             hits: pageHits,
-            evictedPage: evictedPage // null if no eviction
+            prevState: prevState // Add the state from before
         });
     }
 
