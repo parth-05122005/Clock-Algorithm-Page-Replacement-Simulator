@@ -1,42 +1,47 @@
 /**
  * animation.js
- * * This is the "rendering engine" for the LRU Visualizer.
- * It draws the simulation data onto the HTML canvas and manages animation controls.
+ * * This is the "rendering engine." It's responsible for
+ * drawing the simulation data onto the HTML canvas.
+ * It also manages all the animation controls (play, pause, speed, etc.).
  */
 
 // --- Module-Level Variables ---
-let canvas, ctx;
-let simulationData = null;
-let currentStep = 0;
-let animationInterval = null;
+let canvas, ctx; // Our drawing surface and its 2D context
+let simulationData = null; // Will hold the 'steps' array from algorithm.js
+let currentStep = 0; // The index of the step we are currently viewing
+let animationInterval = null; // A timer ID for the 'play' function
 let isPlaying = false;
-let animationSpeed = 1000;
+let animationSpeed = 1000; // Default 1-second delay between steps
+let resizeTimeout; // Timer for debouncing the resize event
 
 /**
  * Initializes the animation with new data.
- * @param {object} data - The full simulation data from runLRUAlgorithm.
+ * This is called by main.js after the "Start" button is clicked.
+ * @param {object} data - The full simulation data from algorithm.js.
  */
 export function animateSimulation(data) {
     // Get the canvas element once
     if (!canvas) {
         canvas = document.getElementById("animation-canvas");
         ctx = canvas.getContext("2d");
+        
+        // Add a resize listener *once* when the canvas is first found
+        // This makes the canvas responsive to window size changes
+        window.addEventListener('resize', handleResize);
     }
-    
+
     // Set the canvas's internal bitmap size to match its display size.
-    // This is CRITICAL to prevent the drawing from being blurry or pixelated.
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    updateCanvasSize();
 
     // Store the data and reset the view
     simulationData = data;
     currentStep = 0;
-    
+
     // Set the timeline slider's max value to the number of steps
     const timeline = document.getElementById('timeline-slider');
     timeline.max = simulationData.steps.length - 1;
     timeline.value = 0;
-    
+
     drawFrame(); // Draw the very first frame (initial state)
 }
 
@@ -49,6 +54,8 @@ export function resetAnimation() {
     simulationData = null;
     currentStep = 0;
     if (ctx) { // Clear the canvas only if it exists
+        // Also update size on reset in case window changed while no sim was active
+        updateCanvasSize(); 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     // Reset all the text in the stats box
@@ -68,12 +75,12 @@ export function play() {
     // Don't do anything if already playing or if there's no data
     if (isPlaying || !simulationData) return;
     isPlaying = true;
-    
+
     // If at the end, restart from the beginning
     if (currentStep >= simulationData.steps.length - 1) {
         currentStep = 0;
     }
-    
+
     // Start a timer that advances the frame
     animationInterval = setInterval(() => {
         if (currentStep < simulationData.steps.length - 1) {
@@ -135,13 +142,46 @@ export function setSpeed(value) {
     // The interval is "delay" (lower = faster)
     // So we invert the value. (2100 - 2000 = 100ms, 2100 - 100 = 2000ms)
     animationSpeed = 2100 - parseInt(value);
-    
+
     // If we're currently playing, restart the interval with the new speed
     if (isPlaying) {
         pause();
         play();
     }
 }
+
+// --- New Helper Functions for Responsiveness ---
+
+/**
+ * Updates the canvas's internal size to match its CSS size.
+ * This prevents the drawing from becoming blurry or stretched.
+ */
+function updateCanvasSize() {
+    if (!canvas) return;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+}
+
+/**
+ * Handles the window's resize event to redraw the canvas.
+ * Uses a "debounce" timer to avoid redrawing too frequently, which hurts performance.
+ */
+function handleResize() {
+    // Clear the old timeout to prevent it from firing
+    clearTimeout(resizeTimeout);
+    
+    // Set a new timeout
+    resizeTimeout = setTimeout(() => {
+        // Only run if the simulation is active
+        if (simulationData && canvas) {
+            updateCanvasSize(); // Update the canvas dimensions
+            drawFrame(); // Redraw the current step
+        }
+    }, 100); // Wait 100ms after the user stops resizing
+}
+
+
+// --- Main Drawing Function ---
 
 /**
  * This is the master function that draws everything on the canvas
@@ -155,7 +195,6 @@ function drawFrame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
     // --- Dynamic Sizing Logic ---
-    // This logic dynamically scales the main frames to fit the canvas
     const numFrames = state.frames.length;
     const baseFrameWidth = 80;
     const baseGap = 40;
@@ -178,180 +217,146 @@ function drawFrame() {
     // Recalculate the centered starting X position
     totalWidth = (numFrames * frameWidth) + ((numFrames - 1) * gap);
     const startX = (canvas.width - totalWidth) / 2;
-    // Vertically center the main frames
-    const startY = (canvas.height - frameHeight) / 2 - 20; // Move main frames up slightly
+    // Vertically center the frames
+    const startY = (canvas.height - frameHeight) / 2;
 
     // --- Draw Main Frames ---
     // Loop through each frame in the current state
     state.frames.forEach((page, index) => {
         const x = startX + index * (frameWidth + gap);
-        
+
+        // Default color
+        let strokeColor = "#00ccff"; // Standard blue/cyan
+
         // --- Color Coding Logic ---
-        let color = "#00ccff"; // Default blue
-        
         if (currentStep > 0) {
-            // Check if this frame was the one that got replaced
-            if (state.fault && state.evictedPage === state.prevState.frames[index] && page !== state.evictedPage) {
-                color = "#ff5f5f"; // Red = Replaced
-            } 
-            // Check if this frame was the one that got hit
-            else if (!state.fault && page === state.page) {
-                color = "#7cf57c"; // Green = Hit
+            if (state.fault && state.replacedIndex === index) {
+                // A fault just happened, and this is the frame that was *replaced*.
+                strokeColor = "#ff5f5f"; // Red = Replaced
+            } else if (!state.fault && state.hitIndex === index) {
+                // A hit just happened. Highlight the frame that was hit.
+                strokeColor = "#7cf57c"; // Green = Hit
             }
         }
 
         // Draw the frame box
-        drawFrameBox(x, startY, frameWidth, frameHeight, page, color);
+        ctx.lineWidth = 3;
+        ctx.fillStyle = "#1e2b3b";
+        ctx.strokeStyle = strokeColor;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = strokeColor;
+        ctx.beginPath();
+        ctx.roundRect(x, startY, frameWidth, frameHeight, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0; // Reset shadow
+
+        // Draw the Page Number (e.g., "5" or "-")
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `${Math.min(24, frameWidth * 0.4)}px Arial`; // Scale font size
+        ctx.textAlign = "center";
+        ctx.fillText(page === -1 ? "-" : page, x + frameWidth / 2, startY + frameHeight / 2 + 8);
     });
 
     // --- Draw Top Status Text (e.g., "HIT on Page 2") ---
     ctx.font = "24px Arial";
     ctx.textAlign = "center";
     if (state.page !== null) { // 'page' is null only on step 0
-        if (state.fault) {
-            ctx.fillStyle = "#ff5f5f"; // Red for fault
-            let faultText = `FAULT on Page ${state.page}`;
-            // If a page was evicted, add it to the text
-            if (state.evictedPage !== null) {
-                faultText += ` (Evicted Page ${state.evictedPage})`;
-            }
-            ctx.fillText(faultText, canvas.width / 2, 50);
-        } else {
-            ctx.fillStyle = "#7cf57c"; // Green for hit
-            ctx.fillText(`HIT on Page ${state.page}`, canvas.width / 2, 50);
-        }
+        ctx.fillStyle = state.fault ? "#ff5f5f" : "#7cf57c";
+        // Show evicted page number if it was a fault
+        const statusText = state.fault ?
+            `FAULT on Page ${state.page} (Evicted Page ${state.evictedPage})` :
+            `HIT on Page ${state.page}`;
+        ctx.fillText(statusText, canvas.width / 2, 50);
     } else {
-        ctx.fillStyle = "#facc15"; // Yellow for initial state
+        ctx.fillStyle = "#facc15";
         ctx.fillText("Initial State", canvas.width / 2, 50);
     }
 
-    // --- Draw "Previous" and "Current" Queues ---
-    // Only draw these after step 0
-    if (currentStep > 0 && state.prevState) {
-        // --- Layout for side-by-side mini queues ---
-        const miniW = 40;
-        const miniH = 40;
-        const miniGap = 10;
-        const arrowWidth = 70; // Space for " -> " arrow
-        const queueWidth = (numFrames * miniW) + ((numFrames - 1) * miniGap);
-        const totalBlockWidth = (queueWidth * 2) + arrowWidth;
-        
-        const blockStartX = (canvas.width - totalBlockWidth) / 2;
-        const queueY = startY + 160;
-
-        const prevQueueX = blockStartX;
-        const currQueueX = blockStartX + queueWidth + arrowWidth;
-        
-        // Draw the two queues
-        drawMiniQueue("Previous Frames", state.prevState.frames, prevQueueX, queueY, miniW, miniH, miniGap);
-        drawMiniQueue("Current Frames", state.frames, currQueueX, queueY, miniW, miniH, miniGap);
-
-        // Draw the arrow between them
-        const arrowY = queueY + miniH / 2; // Vertically center arrow
-        const arrowStartX = prevQueueX + queueWidth + 20;
-        const arrowEndX = currQueueX - 20;
-        drawArrow(arrowStartX, arrowY, arrowEndX, arrowY);
+    // --- Draw Eviction Graphic (Bottom) ---
+    // Only draw this if it was a page fault
+    if (currentStep > 0 && state.fault) {
+        drawEvictionGraphic(state.evictedPage, state.page, canvas.height - 60);
     }
-    
+
+
     // --- Update UI Elements ---
     updateStats(state);
     updateTimeline();
 }
 
 /**
- * Helper function to draw a single frame box (used for main frames).
+ * Draws the (Old Page) -> (New Page) graphic.
+ * @param {number} oldPage - The page number that was evicted.
+ * @param {number} newPage - The new page number that replaced it.
+ * @param {number} y - The y-coordinate to draw at.
  */
-function drawFrameBox(x, y, w, h, text, color) {
-    ctx.lineWidth = 3;
-    ctx.fillStyle = "#1e293b";
-    ctx.strokeStyle = color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = color; // Use the color for the glow
+function drawEvictionGraphic(oldPage, newPage, y) {
+    const boxSize = 40;
+    const arrowPadding = 20;
+    const arrowLength = 30;
+    const totalWidth = boxSize * 2 + arrowPadding * 2 + arrowLength;
+    const startX = (canvas.width - totalWidth) / 2;
     
+    const oldBoxX = startX;
+    const newBoxX = startX + boxSize + arrowPadding * 2 + arrowLength;
+    const arrowX = oldBoxX + boxSize + arrowPadding;
+    
+    // Draw "Old Page" box
+    ctx.strokeStyle = "#ff5f5f"; // Red
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#1e2b3b";
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 10);
+    ctx.roundRect(oldBoxX, y, boxSize, boxSize, 5);
     ctx.fill();
     ctx.stroke();
-    ctx.shadowBlur = 0; // Reset shadow
-
-    // Draw the Page Number (e.g., "5" or "-")
     ctx.fillStyle = "#ffffff";
-    ctx.font = `${Math.min(24, w * 0.4)}px Arial`; // Scale font
+    ctx.font = "18px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(text === -1 ? "-" : text, x + w / 2, y + h / 2 + 8);
-}
-
-/**
- * Helper function to draw the "Previous" and "Current" mini-queues.
- */
-function drawMiniQueue(title, frames, startX, y, w, h, gap) {
-    const numFrames = frames.length;
-
-    // Draw title
-    const totalWidth = (numFrames * w) + ((numFrames - 1) * gap);
-    ctx.fillStyle = "#facc15"; // Changed color to theme yellow
-    ctx.font = "16px Arial";
+    ctx.fillText(oldPage, oldBoxX + boxSize / 2, y + boxSize / 2 + 6);
+    
+    // Draw "New Page" box
+    ctx.strokeStyle = "#7cf57c"; // Green
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#1e2b3b";
+    ctx.beginPath();
+    ctx.roundRect(newBoxX, y, boxSize, boxSize, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "18px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(title, startX + totalWidth / 2, y - 15);
-
-    // Draw mini-frames
-    frames.forEach((page, index) => {
-        const x = startX + index * (w + gap);
-        let color = "#555"; // Default grey
-        
-        if (currentStep > 0) {
-            const state = simulationData.steps[currentStep];
-            // Highlight the *new* page on a fault
-            if (title === "Current Frames" && state.fault && page === state.page) {
-                color = "#ff5f5f";
-            } 
-            // Highlight the *hit* page
-            else if (title === "Current Frames" && !state.fault && page === state.page) {
-                color = "#7cf57c";
-            } 
-            // Highlight any non-empty frame
-            else if (page !== -1) {
-                color = "#00ccff";
-            }
-        }
-        
-        // Draw small box
-        ctx.lineWidth = 2;
-        ctx.fillStyle = "#1e293b";
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 5);
-        ctx.fill();
-        ctx.stroke();
-
-        // Draw small text
-        ctx.fillStyle = "#fff";
-        ctx.font = "14px Arial";
-        ctx.fillText(page === -1 ? "-" : page, x + w / 2, y + h / 2 + 5);
-    });
+    ctx.fillText(newPage, newBoxX + boxSize / 2, y + boxSize / 2 + 6);
+    
+    // Draw Arrow
+    drawArrow(arrowX, y + boxSize / 2, arrowX + arrowLength, y + boxSize / 2, "#facc15");
+    
+    // Draw labels
+    ctx.fillStyle = "#facc15";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Evicted", oldBoxX + boxSize / 2, y - 5);
+    ctx.fillText("Added", newBoxX + boxSize / 2, y - 5);
 }
 
 /**
  * Helper function to draw an arrow.
  */
-function drawArrow(x1, y1, x2, y2) {
-    ctx.fillStyle = "#facc15"; // Changed color to theme yellow
-    ctx.strokeStyle = "#facc15"; // Changed color to theme yellow
+function drawArrow(fromX, fromY, toX, toY, color) {
+    const headLength = 10;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2;
-    
-    // Draw line
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
     ctx.stroke();
-    
-    // Draw arrowhead
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - 10, y2 - 5);
-    ctx.lineTo(x2 - 10, y2 + 5);
-    ctx.closePath();
-    ctx.fill();
 }
 
 
@@ -363,7 +368,7 @@ function updateStats(state) {
     // Live update of counts based on the current step's data
     document.getElementById("page-faults").textContent = `Page Faults: ${state.faults}`;
     document.getElementById("page-hits").textContent = `Page Hits: ${state.hits}`;
-    
+
     // Only show final ratios at the very last step
     if (currentStep === simulationData.steps.length - 1) {
         document.getElementById("miss-ratio").textContent = `Miss Ratio: ${simulationData.missRatio}%`;
@@ -399,33 +404,21 @@ export function exportScreenshot() {
  */
 export function exportTrace() {
     if (!simulationData) return;
-    
+
     let traceContent = "LRU Algorithm Execution Trace\n===================================\n";
-    
+
     // Build a string by looping through every step
     simulationData.steps.forEach((step, index) => {
-        // Handle the initial state (step 0)
-        if (index === 0) {
-            traceContent += `Step 0: Initial State\n`;
-            traceContent += `  - Frames: [${step.frames.join(', ')}]\n\n`;
-            return; // Skip to the next loop iteration
-        }
-        
-        // Handle all subsequent steps
         traceContent += `Step ${index}:\n`;
-        traceContent += `  - Referencing Page: ${step.page}\n`;
-        traceContent += `  - Result: ${step.fault ? 'Page Fault' : 'Page Hit'}\n`;
-        if (step.fault && step.evictedPage !== null) {
-            traceContent += `  - Evicted Page: ${step.evictedPage}\n`;
-        }
-        traceContent += `  - Previous Frames: [${step.prevState.frames.join(', ')}]\n`;
-        traceContent += `  - Current Frames: [${step.frames.join(', ')}]\n`;
-        traceContent += `  - Recency (LRU to MRU): [${step.recency.join(' -> ')}]\n\n`;
+        traceContent += `  - Referencing Page: ${step.page === null ? 'N/A' : step.page}\n`;
+        traceContent += `  - Result: ${index === 0 ? 'Initial State' : (step.fault ? `Page Fault (Evicted ${step.evictedPage})` : 'Page Hit')}\n`;
+        traceContent += `  - Frames: [${step.frames.join(', ')}]\n`; // Show frame contents
+        traceContent += `  - Recency (LRU -> MRU): [${step.recency.join(', ')}]\n\n`;
     });
 
     // Create a "Blob" (Binary Large Object) from the text string
     const blob = new Blob([traceContent], { type: 'text/plain' });
-    
+
     // Create a temporary link to download the blob
     const link = document.createElement('a');
     link.download = 'lru-algorithm-trace.txt';

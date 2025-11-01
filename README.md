@@ -1,83 +1,72 @@
 LRU Page Replacement Algorithm Visualizer
 
-A web-based, interactive visualizer for the LRU (Least Recently Used) page replacement algorithm. This tool is built with pure HTML, CSS, and JavaScript, using the Canvas API for all animations. It's designed to help students and developers understand how the LRU algorithm works by providing a clear, step-by-step animated simulation.
+This is a standalone, client-side web application that provides a real-time, interactive visualization of the Least Recently Used (LRU) page replacement algorithm. This tool is designed to help students and developers understand how the LRU algorithm manages memory, handles page faults, and tracks page recency.
 
-(Tip: Take a screenshot of your finished project, upload it to your repo, and replace the URL above to show it here!)
+This project is built with vanilla HTML, CSS, and JavaScript (ES6+), using the Canvas API for all rendering. It has zero dependencies and runs entirely in the browser.
 
-✨ Features
-
-Interactive Input: Enter any number of frames and a custom page reference string.
-
-Full Animation Control: Play, pause, step forward, and step backward through the simulation.
-
-Real-time Statistics: Watch live updates for Page Faults, Page Hits, Miss Ratio, and Hit Ratio.
-
-Speed Control: Adjust the animation speed from slow (for learning) to fast (for quick results).
-
-Clear State Visualization: See the state of memory before and after each step with side-by-side "Previous Frames" and "Current Frames" queues.
-
-Color-Coded Feedback:
-
-<span style="color: #7cf57c;">Green:</span> Page Hit
-
-<span style="color: #ff5f5f;">Red:</span> Page Fault (with evicted page)
-
-Export Screenshot: Save a PNG image of the current visualizer state.
-
-Export Trace: Download a complete, step-by-step text log of the entire simulation, including the recency list for each step.
-
-🚀 How to Use
-
-Live Demo
-
+Link to Live Deployment: 
 Click here to try the visualizer live! - https://parth-05122005.github.io/LRU-Algorithm-Page-Replacement-Simulator/
 
-Enter Frames: Input the number of available memory frames (e.g., 3).
+Features
 
-Enter Reference String: Type your page reference string, separated by commas (e.g., 1,2,3,4,1,2,5,1,2,3,4,5).
+Interactive Simulation: Input any number of frames and a custom reference string to see how the algorithm performs.
 
-Click "Start Simulation".
+Step-by-Step Control: Play, pause, step forward, and step backward through the entire execution trace.
 
-Control the animation using the play, pause, and step buttons.
+Dynamic Speed Control: Use the speed slider to watch the animation in real-time or slow it down to analyze each step.
 
-Running Locally
+Timeline Scrubbing: Jump to any point in the simulation by dragging the timeline slider.
 
-This is a standalone, client-side application. No server or dependencies are needed.
+Responsive Canvas: The visualization is fully responsive and adapts to your screen size.
 
-Clone this repository:
+Clear Color-Coding:
+
+<span style="color: #7cf57c;">Green:</span> Indicates a Page Hit.
+
+<span style="color: #ff5f5f;">Red:</span> Indicates a Page Fault and shows the replaced frame.
+
+<span style="color: #00ccff;">Blue:</span> Represents a standard, occupied frame.
+
+Eviction Visualization: On a page fault, a clear (Old Page) -> (New Page) graphic appears to show exactly which page was evicted.
+
+Detailed Statistics: Get instant feedback on total Page Faults, Page Hits, and the final Hit/Miss Ratio.
+
+Export Data:
+
+Export Screenshot: Download a .png of the current visualization.
+
+Export Execution Trace: Download a .txt file detailing the state of memory and the algorithm's actions at every single step.
+
+How to Use
+
+This application runs locally in any modern browser. No server or setup is required.
+
+Clone the Repository:
 
 git clone [https://github.com/parth-05122005/LRU-Page-Replacement-Simulator.git](https://github.com/parth-05122005/LRU-Page-Replacement-Simulator.git)
 
 
-Navigate to the project directory:
+Navigate to the Directory:
 
 cd LRU-Page-Replacement-Simulator
 
 
-Open the index.html file in any modern web browser (Chrome, Firefox, Edge, etc.).
+Open the File:
 
-💻 Technology Stack
+Simply double-click the index.html file to open it in your default browser.
 
-HTML5: For the core structure of the application.
+Project Structure
 
-CSS3: For all styling, the dark theme, and the responsive flexbox layout.
+The source code is organized into a modular, easy-to-understand structure.
 
-JavaScript (ES6+): For all algorithm logic, DOM manipulation, and interactivity. The project is built with modules.
+index.html: The main HTML file containing the page structure and all UI elements.
 
-HTML5 Canvas API: For rendering all animated frames, text, and visual elements.
+style.css: The stylesheet responsible for the layout, dark theme, and all visual styling.
 
-📁 Project Structure
+main.js: The main entry point. It connects all modules and sets up the event listeners.
 
-The code is modular by design to separate concerns:
+ui.js: A module responsible for reading and validating all user input from the form.
 
-index.html: The main HTML file for the page structure.
+algorithm.js: The "brain" of the project. It contains the runLRUAlgorithm function, which performs the core logic and generates the step-by-step simulation data.
 
-style.css: Contains all styles for the application.
-
-main.js: The "brain" of the app. It connects all other modules and attaches event listeners.
-
-ui.js: Manages reading and validating user input from the form.
-
-algorithm.js: Contains only the core runLRUAlgorithm logic. It takes inputs and returns a data object.
-
-animation.js: The "rendering engine." It takes the data from algorithm.js and draws it on the canvas.
+animation.js: The "renderer." This module takes the data from algorithm.js and draws everything onto the HTML canvas. It also manages all animation controls (play, pause, etc.).
